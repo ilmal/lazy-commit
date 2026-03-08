@@ -6,8 +6,6 @@ A tiny bash script that:
 - Commits and pushes automatically
 - `gits -r` review mode with instant single-keypress decisions (a/e/c)
 
-The `gits` script lives directly in the repo root, so every `git pull` keeps it automatically up-to-date.
-
 ---
 
 ## Prerequisites
@@ -78,8 +76,6 @@ echo "export PATH=\"$(pwd):\$PATH\"" >> ~/.bash_profile
 source ~/.bash_profile
 ```
 
-> **Tip:** You only need to do this once. The script stays updated forever via `git pull`.
-
 ---
 
 ## Usage
@@ -88,18 +84,3 @@ source ~/.bash_profile
 gits      # Auto-stage, generate message, commit and push
 gits -r   # Review mode — inspect the message before committing
 ```
-
-### Review Mode (`gits -r`)
-
-```
-Suggested commit message:
-fix: correct off-by-one in pagination logic
-
-(a)ccept (e)dit (c)ancel:
-```
-
-| Key | Action |
-|-----|--------|
-| `a` | Accept the suggested message and commit |
-| `e` | Open in `vim` to edit before committing |
-| `c` | Cancel — no commit is made |
