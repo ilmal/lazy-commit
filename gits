@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # gits - GitHub Copilot smart commit (GPT-4.1 + 300-line context)
 # Usage: gits
-#        gits -v   (press a/e/c instantly)
+#        gits -r   (press a/e/c instantly)
 
 VERIFY_MODE=false
-[[ "${1:-}" == "-v" || "${1:-}" == "--verify" ]] && VERIFY_MODE=true
+[[ "${1:-}" == "-r" || "${1:-}" == "--review" ]] && VERIFY_MODE=true
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     echo "Error: Not inside a Git repository."
