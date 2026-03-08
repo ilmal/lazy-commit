@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# gits - GitHub Copilot smart commit (GPT-4.1 + 300-line context)
+# Usage: gits
+#        gits -v   (press a/e/c instantly)
+
+VERIFY_MODE=false
+[[ "${1:-}" == "-v" || "${1:-}" == "--verify" ]] && VERIFY_MODE=true
+
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Error: Not inside a Git repository."
+    exit 0
+fi
+
+echo "Staging all changes..."
+git add -A
+
+if git diff --cached --quiet; then
+    echo "No changes to commit."
+    exit 0
+fi
+
+# This gives the diff + up to 300 lines of surrounding code for every changed file
+DIFF=$(git diff --cached -U300)
+
+COMMIT_MSG=$(copilot --model gpt-4.1 -p '
+You are analyzing a REAL GIT DIFF WITH 300 LINES OF SURROUNDING CODE CONTEXT.
+
+STRICT RULES:
+- The diff includes the exact changes AND 300 lines of code before/after each change.
+- Focus ONLY on what actually changed (ignore the surrounding code unless it helps understand the tiny edit).
+- If the change is tiny (one word in a comment/docstring), describe ONLY that.
+- Output EXACTLY ONE LINE. Nothing else.
+- Maximum 8 words.
+- Format: type: very brief description
+
+Examples for small changes:
+docs: clarify progress callback note
+fix: typo in company_intel comment
+chore: update pipeline description
+
+Here is the git diff with full context:' <<< "$DIFF" 2>/dev/null || echo "")
+
+# Clean message
+COMMIT_MSG=$(echo "$COMMIT_MSG" | head -n 1 | sed 's/^[ \t]*//;s/[ \t]*$//')
+
+if [[ -z "$COMMIT_MSG" ]]; then
+    echo "Error: Failed to generate commit message from Copilot."
+    exit 0
+fi
+
+if [[ "$VERIFY_MODE" == true ]]; then
+    echo ""
+    echo "Suggested commit message:"
+    echo "$COMMIT_MSG"
+    echo ""
+    echo -n "(a)ccept (e)dit (c)ancel: "
+    read -n 1 -s -r choice
+    echo
+
+    case "${choice,,}" in
+        a)
+            echo "Accepted."
+            ;;
+        e)
+            echo "Opening vim..."
+            TMPFILE=$(mktemp)
+            echo "$COMMIT_MSG" > "$TMPFILE"
+            vim "$TMPFILE"
+            COMMIT_MSG=$(cat "$TMPFILE" | head -n 1 | sed 's/^[ \t]*//;s/[ \t]*$//')
+            rm "$TMPFILE"
+            ;;
+        c|*)
+            echo "Cancelled. No commit made."
+            exit 0
+            ;;
+    esac
+fi
+
+echo "Committing..."
+git commit -m "$COMMIT_MSG"
+
+echo "Pushing to remote..."
+git push
+
+echo "Done."
+echo "Commit message: $COMMIT_MSG"
